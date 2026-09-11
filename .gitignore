@@ -1,0 +1,21 @@
+# PowerShell / Windows artifacts
+*.ps1xml
+*.psm1
+*.psd1
+*.log
+*.tmp
+*.bak
+Thumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+
+# GitHub / local state
+.git/
+
+# Output folders
+logs/*.log
+out/
+bin/
+obj/
