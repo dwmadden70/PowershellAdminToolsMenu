@@ -83,12 +83,23 @@ function Invoke-DismCommand {
         [string]$LogPath
     )
 
+    $dismCommand = Get-Command -Name 'dism.exe' -CommandType Application -ErrorAction SilentlyContinue
+    if ($null -eq $dismCommand) {
+        $message = 'DISM was not found on this system. Verify that dism.exe is available in the Windows system path.'
+        Write-Log -Message $message -Path $LogPath -NoConsole
+        Write-Host $message -ForegroundColor Red
+        return [pscustomobject]@{
+            ExitCode = 1
+            Output   = @($message)
+        }
+    }
+
     Write-Host "`nRunning DISM command..." -ForegroundColor Cyan
-    Write-Host ("dism.exe " + ($Arguments -join ' ')) -ForegroundColor DarkGray
+    Write-Host ("{0} {1}" -f $dismCommand.Name, ($Arguments -join ' ')) -ForegroundColor DarkGray
 
     $output = [System.Collections.Generic.List[string]]::new()
     try {
-        & dism.exe @Arguments 2>&1 | ForEach-Object {
+        & $dismCommand.Source @Arguments 2>&1 | ForEach-Object {
             $line = [string]$_
             $output.Add($line)
 
