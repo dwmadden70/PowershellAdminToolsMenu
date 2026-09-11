@@ -12,13 +12,26 @@ function Test-IsAdministrator {
 function Write-Log {
     param(
         [string]$Message,
-        [string]$Path
+        [string]$Path,
+        [switch]$NoConsole
     )
 
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $line = "[$timestamp] $Message"
     Add-Content -Path $Path -Value $line
-    Write-Host $line
+    if (-not $NoConsole) {
+        Write-Host $line
+    }
+}
+
+function Exit-AdminTools {
+    param(
+        [string]$LogPath
+    )
+
+    Write-Log -Message 'User exited the DISM menu.' -Path $LogPath
+    Write-Host "`nPROGRAM TERMINATED." -ForegroundColor Green
+    exit 0
 }
 
 function Write-DosHeader {
@@ -69,12 +82,23 @@ function Invoke-DismCommand {
     Write-Host "`nRunning DISM command..." -ForegroundColor Cyan
     Write-Host ("dism.exe " + ($Arguments -join ' ')) -ForegroundColor DarkGray
 
-    $output = & dism.exe @Arguments 2>&1
+    $output = [System.Collections.Generic.List[string]]::new()
+    & dism.exe @Arguments 2>&1 | ForEach-Object {
+        $line = [string]$_
+        $output.Add($line)
+
+        if ($line -match '(\d+(?:\.\d+)?)%') {
+            $percentComplete = [math]::Min(100, [math]::Max(0, [double]$Matches[1]))
+            Write-Log -Message $line -Path $LogPath -NoConsole
+            Write-Progress -Activity 'DISM operation in progress' -Status ("{0:N1}% complete" -f $percentComplete) -PercentComplete $percentComplete
+        }
+        else {
+            Write-Log -Message $line -Path $LogPath -NoConsole
+        }
+    }
     $exitCode = $LASTEXITCODE
 
-    foreach ($line in $output) {
-        Write-Log -Message $line -Path $LogPath
-    }
+    Write-Progress -Activity 'DISM operation in progress' -Completed
 
     if ($exitCode -eq 0) {
         Write-Host "DISM completed successfully." -ForegroundColor Green
@@ -85,7 +109,7 @@ function Invoke-DismCommand {
 
     return [pscustomobject]@{
         ExitCode = $exitCode
-        Output   = $output
+        Output   = $output.ToArray()
     }
 }
 
@@ -147,10 +171,18 @@ function Show-ImageSubMenu {
         $options = @(
             'Online image',
             'Offline image',
-            'Back to main menu'
+            'Back to Windows Health menu'
         )
 
-        $selection = Show-Menu -Title "DISM ACTION: $ActionName" -Options $options -Subtitle 'Choose the image target'
+        $selection = (Show-Menu -Title "DISM ACTION: $ActionName" -Options $options -Subtitle 'Choose the image target').Trim().ToLowerInvariant()
+
+        if ($selection -in @('e', 'exit')) {
+            Exit-AdminTools -LogPath $LogPath
+        }
+
+        if ($selection -in @('m', 'menu')) {
+            return $true
+        }
 
         switch ($selection) {
             '1' {
@@ -191,6 +223,59 @@ function Show-ImageSubMenu {
     }
 }
 
+function Show-WindowsHealthMenu {
+    param(
+        [string]$LogPath
+    )
+
+    while ($true) {
+        $options = @(
+            'Check health',
+            'Restore health',
+            'Start component cleanup',
+            'Back to main menu'
+        )
+
+        $selection = (Show-Menu -Title 'WINDOWS HEALTH' -Options $options -Subtitle 'Choose a maintenance action').Trim().ToLowerInvariant()
+
+        if ($selection -in @('e', 'exit')) {
+            Exit-AdminTools -LogPath $LogPath
+        }
+
+        if ($selection -in @('m', 'menu')) {
+            return $true
+        }
+
+        switch ($selection) {
+            '1' {
+                $returnToMain = Show-ImageSubMenu -ActionName 'checkhealth' -LogPath $LogPath
+                if ($returnToMain) {
+                    return $true
+                }
+            }
+            '2' {
+                $returnToMain = Show-ImageSubMenu -ActionName 'restorehealth' -LogPath $LogPath
+                if ($returnToMain) {
+                    return $true
+                }
+            }
+            '3' {
+                $returnToMain = Show-ImageSubMenu -ActionName 'componentcleanup' -LogPath $LogPath
+                if ($returnToMain) {
+                    return $true
+                }
+            }
+            '4' {
+                return
+            }
+            default {
+                Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, 3, OR 4." -ForegroundColor Yellow
+                Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
+            }
+        }
+    }
+}
+
 $logDirectory = Join-Path $PSScriptRoot '..\logs'
 if (-not (Test-Path -Path $logDirectory)) {
     New-Item -Path $logDirectory -ItemType Directory -Force | Out-Null
@@ -209,31 +294,22 @@ Write-Log -Message 'Starting DISM script.' -Path $logFile
 
 while ($true) {
     $mainOptions = @(
-        'Check health',
-        'Restore health',
-        'Start component cleanup',
+        'Windows Health',
         'Exit'
     )
 
-    $selection = Show-Menu -Title 'WINDOWS DISM REPAIR MENU' -Options $mainOptions -Subtitle 'ADMINISTRATIVE SYSTEM REPAIR TOOL'
+    $selection = (Show-Menu -Title 'ADMIN TOOLS' -Options $mainOptions -Subtitle '').Trim().ToLowerInvariant()
+
+    if ($selection -in @('2', 'e', 'exit')) {
+        Exit-AdminTools -LogPath $logFile
+    }
 
     switch ($selection) {
         '1' {
-            Show-ImageSubMenu -ActionName 'checkhealth' -LogPath $logFile
-        }
-        '2' {
-            Show-ImageSubMenu -ActionName 'restorehealth' -LogPath $logFile
-        }
-        '3' {
-            Show-ImageSubMenu -ActionName 'componentcleanup' -LogPath $logFile
-        }
-        '4' {
-            Write-Log -Message 'User exited the DISM menu.' -Path $logFile
-            Write-Host "`nPROGRAM TERMINATED." -ForegroundColor Green
-            exit 0
+            Show-WindowsHealthMenu -LogPath $logFile
         }
         default {
-            Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, 3, OR 4." -ForegroundColor Yellow
+            Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, E, OR EXIT." -ForegroundColor Yellow
             Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
         }
     }
