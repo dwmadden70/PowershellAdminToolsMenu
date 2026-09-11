@@ -3,6 +3,13 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
+enum MenuResult {
+    Continue
+    Back
+    MainMenu
+    Exit
+}
+
 function Test-IsAdministrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($identity)
@@ -22,16 +29,6 @@ function Write-Log {
     if (-not $NoConsole) {
         Write-Host $line
     }
-}
-
-function Exit-AdminTools {
-    param(
-        [string]$LogPath
-    )
-
-    Write-Log -Message 'User exited the DISM menu.' -Path $LogPath
-    Write-Host "`nPROGRAM TERMINATED." -ForegroundColor Green
-    exit 0
 }
 
 function Write-DosHeader {
@@ -177,11 +174,11 @@ function Show-ImageSubMenu {
         $selection = (Show-Menu -Title "DISM ACTION: $ActionName" -Options $options -Subtitle 'Choose the image target').Trim().ToLowerInvariant()
 
         if ($selection -in @('e', 'exit')) {
-            Exit-AdminTools -LogPath $LogPath
+            return [MenuResult]::Exit
         }
 
         if ($selection -in @('m', 'menu')) {
-            return $true
+            return [MenuResult]::MainMenu
         }
 
         switch ($selection) {
@@ -195,8 +192,8 @@ function Show-ImageSubMenu {
                         Write-Host "`nTHE $ActionName ACTION FAILED ON THE ONLINE IMAGE. SEE LOG: $LogPath" -ForegroundColor Red
                     }
                 }
-                Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
-                return
+                Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
+                return [MenuResult]::Back
             }
             '2' {
                 $offlineImagePath = Read-Host "ENTER THE PATH TO THE OFFLINE IMAGE (EXAMPLE: D:\\MOUNT\\WINSXS)"
@@ -209,15 +206,15 @@ function Show-ImageSubMenu {
                         Write-Host "`nTHE $ActionName ACTION FAILED ON THE OFFLINE IMAGE. SEE LOG: $LogPath" -ForegroundColor Red
                     }
                 }
-                Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
-                return
+                Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
+                return [MenuResult]::Back
             }
             '3' {
-                return
+                return [MenuResult]::Back
             }
             default {
                 Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, OR 3." -ForegroundColor Yellow
-                Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
+                Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
             }
         }
     }
@@ -239,38 +236,38 @@ function Show-WindowsHealthMenu {
         $selection = (Show-Menu -Title 'WINDOWS HEALTH' -Options $options -Subtitle 'Choose a maintenance action').Trim().ToLowerInvariant()
 
         if ($selection -in @('e', 'exit')) {
-            Exit-AdminTools -LogPath $LogPath
+            return [MenuResult]::Exit
         }
 
         if ($selection -in @('m', 'menu')) {
-            return $true
+            return [MenuResult]::MainMenu
         }
 
         switch ($selection) {
             '1' {
-                $returnToMain = Show-ImageSubMenu -ActionName 'checkhealth' -LogPath $LogPath
-                if ($returnToMain) {
-                    return $true
+                $result = Show-ImageSubMenu -ActionName 'checkhealth' -LogPath $LogPath
+                if ($result -in @([MenuResult]::MainMenu, [MenuResult]::Exit)) {
+                    return $result
                 }
             }
             '2' {
-                $returnToMain = Show-ImageSubMenu -ActionName 'restorehealth' -LogPath $LogPath
-                if ($returnToMain) {
-                    return $true
+                $result = Show-ImageSubMenu -ActionName 'restorehealth' -LogPath $LogPath
+                if ($result -in @([MenuResult]::MainMenu, [MenuResult]::Exit)) {
+                    return $result
                 }
             }
             '3' {
-                $returnToMain = Show-ImageSubMenu -ActionName 'componentcleanup' -LogPath $LogPath
-                if ($returnToMain) {
-                    return $true
+                $result = Show-ImageSubMenu -ActionName 'componentcleanup' -LogPath $LogPath
+                if ($result -in @([MenuResult]::MainMenu, [MenuResult]::Exit)) {
+                    return $result
                 }
             }
             '4' {
-                return
+                return [MenuResult]::Back
             }
             default {
                 Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, 3, OR 4." -ForegroundColor Yellow
-                Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
+                Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
             }
         }
     }
@@ -301,16 +298,23 @@ while ($true) {
     $selection = (Show-Menu -Title 'ADMIN TOOLS' -Options $mainOptions -Subtitle '').Trim().ToLowerInvariant()
 
     if ($selection -in @('2', 'e', 'exit')) {
-        Exit-AdminTools -LogPath $logFile
+        $menuResult = [MenuResult]::Exit
+    }
+    elseif ($selection -eq '1') {
+        $menuResult = Show-WindowsHealthMenu -LogPath $logFile
+    }
+    else {
+        $menuResult = [MenuResult]::Continue
     }
 
-    switch ($selection) {
-        '1' {
-            Show-WindowsHealthMenu -LogPath $logFile
-        }
-        default {
-            Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, E, OR EXIT." -ForegroundColor Yellow
-            Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
-        }
+    if ($menuResult -eq [MenuResult]::Exit) {
+        Write-Log -Message 'User exited the DISM menu.' -Path $logFile
+        Write-Host "`nPROGRAM TERMINATED." -ForegroundColor Green
+        exit 0
+    }
+
+    if ($menuResult -eq [MenuResult]::Continue -and $selection -notin @('1', '2', 'e', 'exit')) {
+        Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, E, OR EXIT." -ForegroundColor Yellow
+        Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
     }
 }
