@@ -28,6 +28,12 @@ Example remote URL:
 ## File structure
 
 - `scripts/Run-AdminTools.ps1` - Main PowerShell script with the DOS-style menu and DISM actions
+- `scripts/modules/AdminTools.Logging.psm1` - Shared timestamped logging helper
+- `scripts/modules/AdminTools.System.psm1` - Administrator and system checks
+- `scripts/modules/AdminTools.UI.psm1` - Reusable DOS-style menu and input helpers
+- `scripts/handlers/AdminTools.Handlers.psm1` - Reusable menu-item dispatcher and tool-specific handlers
+- `scripts/handlers/AdminTools.DismHandlers.psm1` - DISM command construction, execution, progress, and logging
+- `scripts/handlers/AdminTools.MenuHandlers.psm1` - Windows Health and image-target menu functions
 - `logs/` - Runtime log output directory
 - `.gitignore` - Git exclusions for generated files and environment artifacts
 
