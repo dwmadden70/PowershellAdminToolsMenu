@@ -87,22 +87,25 @@ function Invoke-DismCommand {
     Write-Host ("dism.exe " + ($Arguments -join ' ')) -ForegroundColor DarkGray
 
     $output = [System.Collections.Generic.List[string]]::new()
-    & dism.exe @Arguments 2>&1 | ForEach-Object {
-        $line = [string]$_
-        $output.Add($line)
+    try {
+        & dism.exe @Arguments 2>&1 | ForEach-Object {
+            $line = [string]$_
+            $output.Add($line)
 
-        if ($line -match '(\d+(?:\.\d+)?)%') {
-            $percentComplete = [math]::Min(100, [math]::Max(0, [double]$Matches[1]))
-            Write-Log -Message $line -Path $LogPath -NoConsole
-            Write-Progress -Activity 'DISM operation in progress' -Status ("{0:N1}% complete" -f $percentComplete) -PercentComplete $percentComplete
+            if ($line -match '(\d+(?:\.\d+)?)%') {
+                $percentComplete = [math]::Min(100, [math]::Max(0, [double]$Matches[1]))
+                Write-Log -Message $line -Path $LogPath -NoConsole
+                Write-Progress -Activity 'DISM operation in progress' -Status ("{0:N1}% complete" -f $percentComplete) -PercentComplete $percentComplete
+            }
+            else {
+                Write-Log -Message $line -Path $LogPath -NoConsole
+            }
         }
-        else {
-            Write-Log -Message $line -Path $LogPath -NoConsole
-        }
+        $exitCode = $LASTEXITCODE
     }
-    $exitCode = $LASTEXITCODE
-
-    Write-Progress -Activity 'DISM operation in progress' -Completed
+    finally {
+        Write-Progress -Activity 'DISM operation in progress' -Completed
+    }
 
     if ($exitCode -eq 0) {
         Write-Host "DISM completed successfully." -ForegroundColor Green
