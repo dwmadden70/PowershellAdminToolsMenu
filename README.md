@@ -1,10 +1,10 @@
 # PowerShell Admin Tools Menu
 
-A Windows PowerShell project for running DISM maintenance actions from an old-style DOS console menu with nested submenus.
+A Windows PowerShell project providing a menu-driven administrator tools suite through an old-style DOS console interface with nested submenus.
 
 ## Project purpose
 
-This project provides a simple text-based administrative maintenance menu for Windows repair tasks. It allows a user to select a DISM action, choose whether the action should target an online or offline image, and then review the result based on the DISM exit code.
+This project provides a simple text-based menu for administrator tools and maintenance tasks. Its old DOS-style interface allows users to navigate nested menus, select an administrative action, and review the result. DISM actions are currently included for online and offline Windows image maintenance.
 
 ## Included features
 
