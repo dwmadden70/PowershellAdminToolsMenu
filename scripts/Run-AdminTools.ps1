@@ -19,50 +19,65 @@ Import-Module (Join-Path $PSScriptRoot 'modules\AdminTools.UI.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'handlers\AdminTools.Handlers.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'handlers\AdminTools.MenuHandlers.psm1') -Force
 
-$logDirectory = Join-Path $PSScriptRoot '..\logs'
-if (-not (Test-Path -Path $logDirectory)) {
-    New-Item -Path $logDirectory -ItemType Directory -Force | Out-Null
-}
+function Start-AdminTools {
+    [CmdletBinding()]
+    param()
 
-$logFile = Join-Path $logDirectory 'dism.log'
-
-if (-not (Test-IsAdministrator)) {
-    Write-Host "This script must be run as Administrator." -ForegroundColor Red
-    Write-Host "Please reopen PowerShell as an administrator and run this script again." -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
-    exit 1
-}
-
-Write-Log -Message 'Starting DISM script.' -Path $logFile
-
-while ($true) {
-    $mainOptions = @(
-        'Windows Health',
-        'Exit'
-    )
-
-    $selection = Show-Menu -Title 'ADMIN TOOLS' -Options $mainOptions -Subtitle ''
-
-    switch ($selection) {
-        '1' {
-            $menuResult = Show-WindowsHealthMenu -LogPath $logFile
-        }
-        '2' {
-            $menuResult = [MenuResult]::Exit
-        }
-        default {
-            $menuResult = [MenuResult]::Continue
-        }
+    $logDirectory = Join-Path $PSScriptRoot '..\logs'
+    if (-not (Test-Path -LiteralPath $logDirectory)) {
+        New-Item -LiteralPath $logDirectory -ItemType Directory -Force | Out-Null
     }
 
-    if ($menuResult -eq [MenuResult]::Exit) {
-        Write-Log -Message 'User exited the DISM menu.' -Path $logFile
-        Write-Host "`nPROGRAM TERMINATED." -ForegroundColor Green
-        exit 0
+    $logFile = Join-Path $logDirectory 'dism.log'
+
+    if (-not (Test-IsAdministrator)) {
+        Write-Host 'This script must be run as Administrator.' -ForegroundColor Red
+        Write-Host 'Please reopen PowerShell as an administrator and run this script again.' -ForegroundColor Yellow
+        $null = Read-Host 'Press Enter to exit'
+        return 1
     }
 
-    if ($menuResult -eq [MenuResult]::Continue -and $selection -notin @('1', '2')) {
-        Write-Host "INVALID SELECTION. PLEASE CHOOSE 1 OR 2." -ForegroundColor Yellow
-        Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
+    Write-Log -Message 'Starting DISM script.' -Path $logFile
+
+    while ($true) {
+        $mainOptions = @(
+            'Windows Health',
+            'Exit'
+        )
+
+        $selection = Show-Menu -Title 'ADMIN TOOLS' -Options $mainOptions -Subtitle ''
+
+        switch ($selection) {
+            '1' {
+                $menuResult = Show-WindowsHealthMenu -LogPath $logFile
+            }
+            '2' {
+                $menuResult = [MenuResult]::Exit
+            }
+            default {
+                $menuResult = [MenuResult]::Continue
+            }
+        }
+
+        if ($menuResult -eq [MenuResult]::Exit) {
+            Write-Log -Message 'User exited the DISM menu.' -Path $logFile
+            Write-Host "`nPROGRAM TERMINATED." -ForegroundColor Green
+            return 0
+        }
+
+        if ($menuResult -eq [MenuResult]::Continue -and $selection -notin @('1', '2')) {
+            Write-Host 'INVALID SELECTION. PLEASE CHOOSE 1 OR 2.' -ForegroundColor Yellow
+            Write-Host ''
+            $null = Read-Host 'PRESS ENTER TO CONTINUE'
+        }
+    }
+}
+
+# Dot-sourcing loads the functions for tests or another script without
+# launching the interactive menu. Direct execution starts the application.
+if ($MyInvocation.InvocationName -ne '.') {
+    $exitCode = Start-AdminTools
+    if ($null -ne $exitCode) {
+        exit $exitCode
     }
 }

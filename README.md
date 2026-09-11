@@ -51,6 +51,18 @@ Example remote URL:
 5. Monitor the live progress indicator while the DISM operation runs.
 6. Review the detailed command output in `logs/dism.log` if an action fails.
 
+## Tests
+
+The project uses Pester v.3.4.0 tests that do not execute DISM or require administrator privileges. Run them from the project root in Windows PowerShell:
+
+```powershell
+.\tests\Invoke-Tests.ps1
+```
+
+### Pester
+- [GitHub](https://github.com/Pester/Pester)
+- [Quick Start](https://pester.dev/docs/quick-start)
+
 ## DISM actions included
 
 - Check health
