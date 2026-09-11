@@ -45,8 +45,6 @@ Example remote URL:
 5. Monitor the live progress indicator while the DISM operation runs.
 6. Review the detailed command output in `logs/dism.log` if an action fails.
 
-At any submenu prompt, enter `m` or `menu` to return directly to the `Admin Tools` menu. Enter `e` or `exit` to terminate the program immediately.
-
 ## DISM actions included
 
 - Check health

@@ -180,14 +180,6 @@ function Show-ImageSubMenu {
 
         $selection = Show-Menu -Title "DISM ACTION: $ActionName" -Options $options -Subtitle 'Choose the image target'
 
-        if ($selection -in @('e', 'exit')) {
-            return [MenuResult]::Exit
-        }
-
-        if ($selection -in @('m', 'menu')) {
-            return [MenuResult]::MainMenu
-        }
-
         switch ($selection) {
             '1' {
                 $result = Invoke-DismAction -Action $ActionName -ImageType 'online' -ImagePath '' -LogPath $LogPath
@@ -241,14 +233,6 @@ function Show-WindowsHealthMenu {
         )
 
         $selection = Show-Menu -Title 'WINDOWS HEALTH' -Options $options -Subtitle 'Choose a maintenance action'
-
-        if ($selection -in @('e', 'exit')) {
-            return [MenuResult]::Exit
-        }
-
-        if ($selection -in @('m', 'menu')) {
-            return [MenuResult]::MainMenu
-        }
 
         switch ($selection) {
             '1' {
@@ -304,7 +288,7 @@ while ($true) {
 
     $selection = Show-Menu -Title 'ADMIN TOOLS' -Options $mainOptions -Subtitle ''
 
-    if ($selection -in @('2', 'e', 'exit')) {
+    if ($selection -eq '2') {
         $menuResult = [MenuResult]::Exit
     }
     elseif ($selection -eq '1') {
@@ -320,8 +304,8 @@ while ($true) {
         exit 0
     }
 
-    if ($menuResult -eq [MenuResult]::Continue -and $selection -notin @('1', '2', 'e', 'exit')) {
-        Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, E, OR EXIT." -ForegroundColor Yellow
+    if ($menuResult -eq [MenuResult]::Continue -and $selection -notin @('1', '2')) {
+        Write-Host "INVALID SELECTION. PLEASE CHOOSE 1 OR 2." -ForegroundColor Yellow
         Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
     }
 }
