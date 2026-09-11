@@ -51,6 +51,14 @@ function Write-DosFooter {
     Write-Host "+" + ('-' * 76) + "+" -ForegroundColor DarkCyan
 }
 
+function Read-MenuSelection {
+    param(
+        [string]$Prompt = 'SELECT OPTION'
+    )
+
+    return (Read-Host $Prompt).Trim().ToLowerInvariant()
+}
+
 function Show-Menu {
     param(
         [string]$Title,
@@ -66,8 +74,7 @@ function Show-Menu {
     }
 
     Write-DosFooter
-    $choice = Read-Host "SELECT OPTION"
-    return $choice
+    return Read-MenuSelection
 }
 
 function Invoke-DismCommand {
@@ -171,7 +178,7 @@ function Show-ImageSubMenu {
             'Back to Windows Health menu'
         )
 
-        $selection = (Show-Menu -Title "DISM ACTION: $ActionName" -Options $options -Subtitle 'Choose the image target').Trim().ToLowerInvariant()
+        $selection = Show-Menu -Title "DISM ACTION: $ActionName" -Options $options -Subtitle 'Choose the image target'
 
         if ($selection -in @('e', 'exit')) {
             return [MenuResult]::Exit
@@ -233,7 +240,7 @@ function Show-WindowsHealthMenu {
             'Back to main menu'
         )
 
-        $selection = (Show-Menu -Title 'WINDOWS HEALTH' -Options $options -Subtitle 'Choose a maintenance action').Trim().ToLowerInvariant()
+        $selection = Show-Menu -Title 'WINDOWS HEALTH' -Options $options -Subtitle 'Choose a maintenance action'
 
         if ($selection -in @('e', 'exit')) {
             return [MenuResult]::Exit
@@ -295,7 +302,7 @@ while ($true) {
         'Exit'
     )
 
-    $selection = (Show-Menu -Title 'ADMIN TOOLS' -Options $mainOptions -Subtitle '').Trim().ToLowerInvariant()
+    $selection = Show-Menu -Title 'ADMIN TOOLS' -Options $mainOptions -Subtitle ''
 
     if ($selection -in @('2', 'e', 'exit')) {
         $menuResult = [MenuResult]::Exit
