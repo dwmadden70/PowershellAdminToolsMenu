@@ -53,7 +53,7 @@ Example remote URL:
 
 ## Tests
 
-The project uses Pester v.3.4.0 tests that do not execute DISM or require administrator privileges. Run them from the project root in Windows PowerShell:
+The project uses Pester 6 tests that do not execute DISM or require administrator privileges. Run them from the project root in PowerShell:
 
 ```powershell
 .\tests\Invoke-Tests.ps1

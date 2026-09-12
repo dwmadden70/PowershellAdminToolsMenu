@@ -1,8 +1,11 @@
 [CmdletBinding()]
 param()
 
+# The test file uses BeforeAll and modern Should syntax, which require Pester 5+.
+Import-Module Pester -MinimumVersion 6.0.0 -MaximumVersion 6.99.99 -Force
+
 $testPath = Join-Path $PSScriptRoot 'Run-AdminTools.Tests.ps1'
-$result = Invoke-Pester -Path $testPath -Quiet -PassThru
+$result = Invoke-Pester -Path $testPath -Output None -PassThru
 
 $summary = [pscustomobject]@{
     TestPath    = $testPath

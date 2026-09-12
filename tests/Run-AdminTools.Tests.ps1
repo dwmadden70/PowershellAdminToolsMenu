@@ -1,30 +1,25 @@
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$scriptPath = Join-Path $projectRoot 'scripts\Run-AdminTools.ps1'
+BeforeAll {
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    $scriptPath  = Join-Path $projectRoot 'scripts/Run-AdminTools.ps1'
 
-# Dot-sourcing loads functions and modules without starting the interactive menu.
-. $scriptPath
+    # Dot-sourcing loads functions and modules without starting the interactive menu.
+    . $scriptPath
+}
 
 Describe 'Run-AdminTools script' {
     It 'exposes the application entry point without starting the menu' {
-        (Get-Command Start-AdminTools).CommandType | Should Be 'Function'
+        (Get-Command Start-AdminTools).CommandType.ToString() | Should-BeString 'Function'
     }
-
 }
 
 Describe 'DISM action validation' {
-    It 'rejects an empty offline image path' {
-        $result = Invoke-DismAction -Action 'checkhealth' -ImageType 'offline' -ImagePath '' -Context @{} 6>$null
-        $result | Should BeNullOrEmpty
-    }
-
-    It 'rejects an unsupported image type' {
-        $result = Invoke-DismAction -Action 'checkhealth' -ImageType 'invalid' -ImagePath '' -Context @{} 6>$null
-        $result | Should BeNullOrEmpty
-    }
-
-    It 'rejects an unsupported DISM action' {
-        $result = Invoke-DismAction -Action 'invalid' -ImageType 'online' -ImagePath '' -Context @{} 6>$null
-        $result | Should BeNullOrEmpty
+    It 'rejects <scenario>' -ForEach @(
+        @{ scenario = 'an empty offline image path';    Action = 'checkhealth'; ImageType = 'offline'; ImagePath = '' }
+        @{ scenario = 'an unsupported image type';      Action = 'checkhealth'; ImageType = 'invalid'; ImagePath = '' }
+        @{ scenario = 'an unsupported DISM action';     Action = 'invalidxxx';     ImageType = 'online';  ImagePath = '' }
+    ) {
+        $result = Invoke-DismAction -Action $Action -ImageType $ImageType -ImagePath $ImagePath -Context @{} 6>$null
+        $result | Should-BeNull
     }
 }
 
@@ -43,19 +38,12 @@ Describe 'Generic menu handler dispatch' {
             ActionName = 'checkhealth'
         }
 
-        Invoke-MenuItem -MenuItem $menuItem -Context $context | Should Be 'handled:checkhealth:test.log'
+        Invoke-MenuItem -MenuItem $menuItem -Context $context | Should-BeString 'handled:checkhealth:test.log'
     }
 
-    It 'rejects a menu item without a handler' {
-        $menuItem = [pscustomobject]@{ Label = 'Incomplete action' }
-        $threw = $false
-        try {
-            Invoke-MenuItem -MenuItem $menuItem -Context @{}
-        }
-        catch {
-            $threw = $true
-        }
+   It 'rejects a menu item without a handler' {
+    $menuItem = [pscustomobject]@{ Label = 'Incomplete action' }
 
-        $threw | Should Be $true
+        { Invoke-MenuItem -MenuItem $menuItem -Context @{} } | Should-Throw -Because 'a menu item must declare a handler'}
     }
-}
+
