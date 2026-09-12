@@ -3,10 +3,13 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-function Test-IsAdministrator {
-    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
-    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+# Explicit results let nested menus communicate navigation intent without
+# printing Boolean values or terminating the session inside a helper function.
+enum MenuResult {
+    Continue
+    Back
+    MainMenu
+    Exit
 }
 
 function Write-Log {
@@ -312,5 +315,16 @@ while ($true) {
             Write-Host "INVALID SELECTION. PLEASE CHOOSE 1, 2, E, OR EXIT." -ForegroundColor Yellow
             Write-Host "" ; Read-Host "PRESS ENTER TO CONTINUE"
         }
+    }
+
+    if ($menuResult -eq [MenuResult]::Exit) {
+        Write-Log -Message 'User exited the DISM menu.' -Path $logFile
+        Write-Host "`nPROGRAM TERMINATED." -ForegroundColor Green
+        exit 0
+    }
+
+    if ($menuResult -eq [MenuResult]::Continue -and $selection -notin @('1', '2')) {
+        Write-Host "INVALID SELECTION. PLEASE CHOOSE 1 OR 2." -ForegroundColor Yellow
+        Write-Host "" ; $null = Read-Host "PRESS ENTER TO CONTINUE"
     }
 }

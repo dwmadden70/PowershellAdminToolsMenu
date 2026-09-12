@@ -19,3 +19,6 @@ logs/*.log
 out/
 bin/
 obj/
+
+# Source PowerShell modules
+!scripts/**/*.psm1
